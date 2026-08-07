@@ -1,3 +1,14 @@
+use std::str::FromStr;
+
+use ::solana_program::native_token::LAMPORTS_PER_SOL;
+use anyhow::Ok;
+use commons::derive_event_authority_pda;
+use dlmm::types::RemainingAccountsInfo;
+use solana_instruction::{AccountMeta, Instruction};
+use solana_keypair::Signer;
+use solana_program_test::ProgramTest;
+use solana_pubkey::Pubkey;
+
 use crate::*;
 
 struct SplTestPair {
@@ -90,7 +101,7 @@ fn setup_spl_test_pair() -> (ProgramTest, SplTestPair) {
 }
 
 #[tokio::test]
-async fn test_swap_exact_out() {
+async fn test_swap_exact_out() -> anyhow::Result<()> {
     let (
         test,
         SplTestPair {
@@ -165,7 +176,7 @@ async fn test_swap_exact_out() {
         token_y_program: spl_token::id(),
         program: dlmm::ID,
         event_authority,
-        memo_program: spl_memo::ID,
+        memo_program: Pubkey::from_str(&spl_memo::id().to_string())?,
     }
     .to_account_metas(None);
 
@@ -205,10 +216,12 @@ async fn test_swap_exact_out() {
         user_token_out_state_after.amount - user_token_out_state_before.amount,
         out_amount
     );
+
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_swap() {
+async fn test_swap() -> anyhow::Result<()> {
     let (
         test,
         SplTestPair {
@@ -274,7 +287,7 @@ async fn test_swap() {
         token_y_program: spl_token::id(),
         program: dlmm::ID,
         event_authority,
-        memo_program: spl_memo::id(),
+        memo_program: Pubkey::from_str(&spl_memo::id().to_string())?,
     }
     .to_account_metas(None);
 
@@ -306,4 +319,6 @@ async fn test_swap() {
         user_token_out_state_after.amount - user_token_out_state_before.amount,
         quote_result.amount_out
     );
+
+    Ok(())
 }

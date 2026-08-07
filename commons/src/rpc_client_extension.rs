@@ -1,7 +1,8 @@
-use crate::*;
-use anchor_client::solana_client::nonblocking::rpc_client::RpcClient;
+use anyhow::Result;
 use async_trait::async_trait;
-use solana_sdk::{account::Account, pubkey::Pubkey};
+use solana_account::Account;
+use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_pubkey::Pubkey;
 
 #[async_trait]
 pub trait RpcClientExtension {

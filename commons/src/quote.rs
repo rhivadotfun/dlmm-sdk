@@ -1,8 +1,19 @@
-use crate::*;
-use anchor_client::solana_sdk::pubkey::Pubkey;
-use core::result::Result::Ok;
-use solana_sdk::{account::Account, clock::Clock};
 use std::collections::HashMap;
+
+use anyhow::{ensure, Context, Result};
+use dlmm::{
+    accounts::{BinArray, BinArrayBitmapExtension, LbPair},
+    constants::{BASIS_POINT_MAX, LIMIT_ORDER_FEE_SHARE},
+    pda::derive_bin_array_pda,
+    typedefs::BinQuoteResult,
+    types::{ActivationType, Bin, PairStatus, PairType, Rounding},
+    BinArrayBitmapExtExtension, BinArrayExtension, BinExtension, LbPairExtension,
+};
+use solana_account::Account;
+use solana_clock::Clock;
+use solana_pubkey::Pubkey;
+
+use crate::{calculate_transfer_fee_excluded_amount, calculate_transfer_fee_included_amount};
 
 #[derive(Debug)]
 pub struct SwapExactInQuote {
@@ -707,24 +718,18 @@ pub fn get_bin_array_pubkeys_for_swap(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use anchor_client::solana_client::rpc_response::RpcKeyedAccount;
-    use anchor_client::solana_sdk::clock::Clock;
-    use anchor_client::{
-        solana_client::nonblocking::rpc_client::RpcClient, solana_sdk::pubkey::Pubkey, Cluster,
-    };
     use litesvm::LiteSVM;
+    use solana_client::{nonblocking::rpc_client::RpcClient, rpc_response::RpcKeyedAccount};
+
+    use super::*;
+    use crate::Cluster;
 
     pub const DLMM_PROGRAM_FILE_PATH: &str = "../artifacts/lb_clmm.so";
 
     /// Get on chain clock
     async fn get_clock(rpc_client: RpcClient) -> Result<Clock> {
-        let clock_account = rpc_client
-            .get_account(&anchor_client::solana_sdk::sysvar::clock::ID)
-            .await?;
-
+        let clock_account = rpc_client.get_account(&solana_clock::sysvar::ID).await?;
         let clock_state: Clock = bincode::deserialize(clock_account.data.as_ref())?;
-
         Ok(clock_state)
     }
 
@@ -961,21 +966,20 @@ mod tests {
     }
 
     #[test]
-    fn test_swap_quote_infinite_loop() {
+    fn test_swap_quote_infinite_loop() -> anyhow::Result<()> {
         let test_pair = Pubkey::from_str_const("FJbEo74c2W4QLBBVUfUvi8VBWXtMdJVPuFpq2f6UV1iB");
         let associated_accounts_folder_path = format!("../artifacts/{}", test_pair);
 
         let mut svm = LiteSVM::new().with_sysvars();
         let program_bytes = std::fs::read(DLMM_PROGRAM_FILE_PATH).unwrap();
-        svm.add_program(dlmm::ID, &program_bytes);
+        svm.add_program(dlmm::ID, &program_bytes)?;
 
         let accounts_dir = std::fs::read_dir(associated_accounts_folder_path).unwrap();
         for entry in accounts_dir {
             let account_data = std::fs::read_to_string(entry.unwrap().path()).unwrap();
             let rpc_account: RpcKeyedAccount =
                 serde_json::from_str(&account_data).expect("Failed to deserialize account data");
-            let account: anchor_client::solana_sdk::account::Account =
-                rpc_account.account.decode().unwrap();
+            let account: solana_account::Account = rpc_account.account.decode().unwrap();
             let account_pubkey = Pubkey::from_str_const(&rpc_account.pubkey);
 
             svm.set_account(account_pubkey, account.clone()).unwrap();
@@ -1075,5 +1079,7 @@ mod tests {
         assert!(quote_result.is_err());
         let err = quote_result.unwrap_err();
         assert_eq!(err.to_string(), "Pool out of liquidity");
+
+        Ok(())
     }
 }

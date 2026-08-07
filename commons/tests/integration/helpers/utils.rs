@@ -1,19 +1,17 @@
-use anchor_lang::AccountDeserialize;
-use anchor_spl::associated_token::*;
-use anchor_spl::token::spl_token;
-use anchor_spl::token_interface::TokenAccount;
+use std::collections::HashMap;
+
+use anchor_lang::{solana_program::system_instruction, AccountDeserialize};
+use anchor_spl::{associated_token::*, token::spl_token, token_interface::TokenAccount};
 use assert_matches::assert_matches;
-use commons::dlmm::accounts::{BinArray, LbPair};
+use dlmm::accounts::{BinArray, LbPair};
+use solana_account::Account;
+use solana_client::rpc_response::transaction::Transaction;
+use solana_instruction::Instruction;
+use solana_keypair::{Keypair, Signer};
 use solana_program::clock::Clock;
 use solana_program_test::BanksClient;
-use solana_sdk::{
-    account::Account,
-    instruction::Instruction,
-    pubkey::Pubkey,
-    signature::{Keypair, Signer},
-    transaction::Transaction,
-};
-use std::collections::HashMap;
+use solana_pubkey::Pubkey;
+
 pub async fn process_and_assert_ok(
     instructions: &[Instruction],
     payer: &Keypair,
@@ -94,7 +92,7 @@ pub async fn warp_sol(
     amount: u64,
     banks_client: &mut BanksClient,
 ) {
-    let wsol_ata = spl_associated_token_account::get_associated_token_address(
+    let wsol_ata = anchor_spl::associated_token::get_associated_token_address(
         &wallet,
         &spl_token::native_mint::id(),
     );
@@ -107,8 +105,7 @@ pub async fn warp_sol(
             &spl_token::id(),
         );
 
-    let transfer_sol_ix =
-        solana_program::system_instruction::transfer(&payer.pubkey(), &wsol_ata, amount);
+    let transfer_sol_ix = system_instruction::transfer(&payer.pubkey(), &wsol_ata, amount);
 
     let sync_native_ix = spl_token::instruction::sync_native(&spl_token::id(), &wsol_ata).unwrap();
 

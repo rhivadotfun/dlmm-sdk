@@ -1,3 +1,13 @@
+use std::str::FromStr;
+
+use ::solana_program::native_token::LAMPORTS_PER_SOL;
+use commons::derive_event_authority_pda;
+use dlmm::types::RemainingAccountsInfo;
+use solana_instruction::{AccountMeta, Instruction};
+use solana_keypair::Signer;
+use solana_program_test::ProgramTest;
+use solana_pubkey::Pubkey;
+
 use crate::*;
 
 struct Token2022TestPair {
@@ -170,7 +180,7 @@ async fn test_swap_exact_out() {
             token_y_program: spl_token::ID,
             program: dlmm::ID,
             event_authority,
-            memo_program: spl_memo::ID,
+            memo_program: Pubkey::from_str(&spl_memo::id().to_string()).unwrap(),
         }
         .to_account_metas(None);
 
@@ -290,7 +300,7 @@ async fn test_swap() {
             token_y_program: spl_token::ID,
             program: dlmm::ID,
             event_authority,
-            memo_program: spl_memo::ID,
+            memo_program: Pubkey::from_str(&spl_memo::id().to_string()).unwrap(),
         }
         .to_account_metas(None);
 

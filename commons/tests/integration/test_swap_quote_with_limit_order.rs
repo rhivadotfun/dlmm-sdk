@@ -1,8 +1,15 @@
+use std::{collections::HashMap, rc::Rc, str::FromStr};
+
+use ::solana_program::native_token::LAMPORTS_PER_SOL;
+use commons::{derive_bin_array_pda, derive_event_authority_pda, dlmm::accounts::BinArray};
+use dlmm::{BinArrayExtension, BinExtension, types::RemainingAccountsInfo};
+use solana_account::Account;
+use solana_instruction::{AccountMeta, Instruction};
+use solana_keypair::{Keypair, Signer};
+use solana_program_test::ProgramTest;
+use solana_pubkey::Pubkey;
+
 use crate::*;
-use commons::dlmm::accounts::BinArray;
-use solana_sdk::signature::Keypair;
-use std::collections::HashMap;
-use std::rc::Rc;
 
 const FIXTURE_FOLDER: &str = "9t3EyC9FweyL7PBWvKz3mrXg8B9fwFc9SK3QxM4ENqhd";
 
@@ -90,7 +97,7 @@ fn setup_swap_quote_test_pair() -> (ProgramTest, SwapQuoteTestPair) {
         mint_data[4..36].copy_from_slice(mint_authority.pubkey().as_ref());
         test.add_account(
             mint_pubkey,
-            solana_sdk::account::Account {
+            Account {
                 lamports: 10 * LAMPORTS_PER_SOL,
                 data: mint_data,
                 owner: spl_token::id(),
@@ -223,7 +230,7 @@ async fn test_swap_exact_in_x_to_y_with_limit_order() {
         token_y_program: spl_token::id(),
         program: dlmm::ID,
         event_authority,
-        memo_program: spl_memo::id(),
+        memo_program: Pubkey::from_str(&spl_memo::id().to_string()).unwrap(),
     }
     .to_account_metas(None);
 
@@ -356,7 +363,7 @@ async fn test_swap_exact_in_y_to_x_with_limit_order() {
         token_y_program: spl_token::id(),
         program: dlmm::ID,
         event_authority,
-        memo_program: spl_memo::id(),
+        memo_program: Pubkey::from_str(&spl_memo::id().to_string()).unwrap(),
     }
     .to_account_metas(None);
 
@@ -492,7 +499,7 @@ async fn test_swap_exact_out_x_to_y_with_limit_order() {
         token_y_program: spl_token::id(),
         program: dlmm::ID,
         event_authority,
-        memo_program: spl_memo::ID,
+        memo_program: Pubkey::from_str(&spl_memo::id().to_string()).unwrap(),
     }
     .to_account_metas(None);
 
@@ -626,7 +633,7 @@ async fn test_swap_exact_out_y_to_x_with_limit_order() {
         token_y_program: spl_token::id(),
         program: dlmm::ID,
         event_authority,
-        memo_program: spl_memo::ID,
+        memo_program: Pubkey::from_str(&spl_memo::id().to_string()).unwrap(),
     }
     .to_account_metas(None);
 
@@ -787,7 +794,7 @@ async fn run_swap_exact_out_active_bin_partition(kind: ActiveBinOutKind) {
         token_y_program: spl_token::id(),
         program: dlmm::ID,
         event_authority,
-        memo_program: spl_memo::ID,
+        memo_program: Pubkey::from_str(&spl_memo::id().to_string()).unwrap(),
     }
     .to_account_metas(None);
 
